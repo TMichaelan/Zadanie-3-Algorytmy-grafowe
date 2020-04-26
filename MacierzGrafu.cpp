@@ -37,8 +37,14 @@ int main(int argc, char* argv[])
             {
                 t[i] = (long long*)calloc((n + 4), 8);
             }
-            std::vector<unsigned int> Ln[n + 1], Lp[n + 1], Lb[n + 1];
-            bool bit[n + 1][n + 1] = {{0}};
+            std::vector<unsigned int> *Ln = new std::vector<unsigned int>[n + 1];
+            std::vector<unsigned int> *Lp = new std::vector<unsigned int>[n + 1];
+            std::vector<unsigned int> *Lb = new std::vector<unsigned int>[n + 1];
+            char **bit = (char**)calloc((n + 1)*(n + 1), 1);
+            for (int i = 0; i < n + 1; i++)
+            {
+                bit[i] = (char*)calloc(n + 1, 1);
+            }
             unsigned int a, b;
             for (int i = 0; i < m; i++)
             {
@@ -121,7 +127,11 @@ int main(int argc, char* argv[])
             DFSMain(t, n);
             timeend = std::clock();
             czasyDFS << 1000.0 * (timeend - timestart) / CLOCKS_PER_SEC << "\n";
+            free(bit);
             free(t);
+            delete Lp;
+            delete Lb;
+            delete Ln;
         }
         czasyDEL.close();
         czasyDFS.close();
@@ -135,8 +145,14 @@ int main(int argc, char* argv[])
         {
             t[i] = (long long*)calloc((n + 4), 8);
         }
-        std::vector<unsigned int> Ln[n + 1], Lp[n + 1], Lb[n + 1];
-        bool bit[n + 1][n + 1] = {{0}};
+        std::vector<unsigned int> *Ln = new std::vector<unsigned int>[n + 1];
+        std::vector<unsigned int> *Lp = new std::vector<unsigned int>[n + 1];
+        std::vector<unsigned int> *Lb = new std::vector<unsigned int>[n + 1];
+        char **bit = (char**)calloc((n + 1)*(n + 1), 1);
+        for (int i = 0; i < n + 1; i++)
+        {
+            bit[i] = (char*)calloc(n + 1, 1);
+        }
         unsigned int a, b;
         for (int i = 0; i < m; i++)
         {
@@ -212,6 +228,10 @@ int main(int argc, char* argv[])
         }
         DEL(t, n);
         DFSMain(t, n);
+        delete Ln;
+        delete Lp;
+        delete Lb;
+        free(bit);
         free(t);
     }
 }
@@ -286,7 +306,7 @@ void GetNumbersFromFile(unsigned int *a, unsigned int *b, std::string l, std::st
 
 void DEL(long long **t, int arraySize)
 {
-    unsigned int stopien[arraySize + 1] = {0};
+    unsigned int *stopien = (unsigned int*)calloc(arraySize + 1, 4);
     for (int i = 1; i <= arraySize; i++)
     {
         if (t[i][arraySize + 2] != 0)
@@ -310,7 +330,7 @@ void DEL(long long **t, int arraySize)
         }
     }
     unsigned int current2;
-    unsigned int wynik[arraySize + 1];
+    unsigned int *wynik = (unsigned int*)calloc(arraySize + 1, 4);
     while (!stos.empty())
     {
         current2 = stos.top();
@@ -341,10 +361,12 @@ void DEL(long long **t, int arraySize)
         }
         std::cout << "\n";
     }
+    free(wynik);
+    free(stopien);
     return;
 }
 
-void DFS(unsigned int index, unsigned int visited[], std::vector<unsigned int> &stos, long long **t, bool *isCycle, int arraySize)
+void DFS(unsigned int index, unsigned int *visited, std::vector<unsigned int> &stos, long long **t, bool *isCycle, int arraySize)
 {
     visited[index] = 1;
     if (t[index][arraySize + 1] != 0)
@@ -378,7 +400,7 @@ void DFS(unsigned int index, unsigned int visited[], std::vector<unsigned int> &
 void DFSMain(long long **t, int arraySize)
 {
     std::vector<unsigned int> stos;
-    unsigned int visited[arraySize + 1] = {0};
+    unsigned int *visited = (unsigned int*)calloc(arraySize + 1, 4);
     bool isCycle = false;
     for (int i = 1; i <= arraySize; i++)
     {
