@@ -2,26 +2,68 @@
 #include <sstream>
 #include <vector>
 #include <stack>
+#include <fstream>
+#include <ctime>
+#include <chrono>
 
 void GetNumbers(unsigned int *a, unsigned int *b, unsigned int limit = 4294967295);
+void GetNumbersFromFile(unsigned int *a, unsigned int *b, std::string l, std::string k, unsigned int limit = 4294967295);
 unsigned int StringToInt(std::string x);
 std::string IntToString(int x);
 void DFSMain(std::vector<unsigned int> t[], int arraySize);
 void DEL(std::vector<unsigned int> t[], int arraySize);
 
-int main(void)
+int main(int argc, char* argv[])
 {
-    unsigned int n, m;
-    GetNumbers(&n, &m);
-    std::vector<unsigned int> t[n + 1];
-    unsigned int a, b;
-    for (int i = 0; i < m; i++)
+    if (argc > 1)
     {
-        GetNumbers(&a, &b, n + 1);
-        t[a].push_back(b);
+        std::fstream czasyDEL;
+        std::fstream czasyDFS;
+        czasyDEL.open("CzasyDELLista.txt", std::ios::in | std::ios::out);
+        czasyDFS.open("CzasyDFSLista.txt", std::ios::in | std::ios::out);
+        for (int i = 1; i < argc; i++)
+        {
+            std::fstream plik;
+            plik.open(argv[i], std::ios::in | std::ios::out);
+            unsigned int n, m;
+            std::string k, l;
+            plik >> k >> l;
+            GetNumbersFromFile(&n, &m, k, l, 4294967291);
+            std::vector<unsigned int> t[n + 1];
+            unsigned int a, b;
+            for (int j = 0; j < m; j++)
+            {
+                plik >> k >> l;
+                GetNumbersFromFile(&a, &b, k, l, n + 1);
+                t[a].push_back(b);
+            }
+            std::clock_t timestart = std::clock();
+            DEL(t, n);
+            std::clock_t timeend = std::clock();
+            czasyDEL << 1000.0 * (timeend - timestart) / CLOCKS_PER_SEC << "\n";
+            timestart = std::clock();
+            DFSMain(t, n);
+            timeend = std::clock();
+            czasyDEL << 1000.0 * (timeend - timestart) / CLOCKS_PER_SEC << "\n";
+        }
+        czasyDEL.close();
+        czasyDFS.close();
     }
-    DEL(t, n);
-    DFSMain(t, n);
+    else
+    {
+        unsigned int n, m;
+        GetNumbers(&n, &m);
+        std::vector<unsigned int> t[n + 1];
+        unsigned int a, b;
+        for (int i = 0; i < m; i++)
+        {
+            GetNumbers(&a, &b, n + 1);
+            t[a].push_back(b);
+        }
+        DEL(t, n);
+        DFSMain(t, n);
+    }
+    return 0;
 }
 
 std::string IntToString(int x)
@@ -49,6 +91,30 @@ void GetNumbers(unsigned int *a, unsigned int *b, unsigned int limit)
     {
         std::string l, k;
         std::cin >> l >> k;
+        n = StringToInt(l);
+        if (IntToString(n) != l || n > limit)
+        {
+            std::cout << "Bledne dane.\n";
+            continue;
+        }
+        m = StringToInt(k);
+        if (IntToString(m) != k || m > limit)
+        {
+            std::cout << "Bledne dane.\n";
+            continue;
+        }
+        break;
+    }
+    *a = n;
+    *b = m;
+    return;
+}
+
+void GetNumbersFromFile(unsigned int *a, unsigned int *b, std::string l, std::string k, unsigned int limit)
+{
+    unsigned int n, m;
+    for (;;)
+    {
         n = StringToInt(l);
         if (IntToString(n) != l || n > limit)
         {
