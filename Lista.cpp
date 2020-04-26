@@ -44,7 +44,7 @@ int main(int argc, char* argv[])
             timestart = std::clock();
             DFSMain(t, n);
             timeend = std::clock();
-            czasyDEL << 1000.0 * (timeend - timestart) / CLOCKS_PER_SEC << "\n";
+            czasyDFS << 1000.0 * (timeend - timestart) / CLOCKS_PER_SEC << "\n";
         }
         czasyDEL.close();
         czasyDFS.close();

@@ -4,8 +4,11 @@
 #include <stack>
 #include <bitset>
 #include <algorithm>
+#include <fstream>
+#include <chrono>
 
-void GetNumbers(unsigned int *a, unsigned int *b, unsigned int limit = 4294967295);
+void GetNumbers(unsigned int *a, unsigned int *b, unsigned int limit = 4294967291);
+void GetNumbersFromFile(unsigned int *a, unsigned int *b, std::string l, std::string k, unsigned int limit = 4294967291);
 unsigned int StringToInt(std::string x);
 std::string IntToString(int x);
 void DFSMain(std::vector<unsigned int> t[], int arraySize);
@@ -13,102 +16,204 @@ void DEL(long long **t, int arraySize);
 void DFSMain(long long **t, int arraySize);
 void DFS(unsigned int index, unsigned int visited[], std::vector<unsigned int> &stos, long long **t, bool *isCycle, int arraySize);
 
-int main(void)
+int main(int argc, char* argv[])
 {
-    unsigned int n, m;
-    GetNumbers(&n, &m, 4294967291);
-    long long **t = (long long**)calloc((n + 1) * (n + 4), 8);
-    for (int i = 0; i < n + 1; i++)
+    if (argc > 1)
     {
-        t[i] = (long long*)calloc((n + 4), 8);
-    }
-    std::vector<unsigned int> Ln[n + 1], Lp[n + 1], Lb[n + 1];
-    bool bit[n + 1][n + 1] = {{0}};
-    unsigned int a, b;
-    for (int i = 0; i < m; i++)
-    {
-        GetNumbers(&a, &b, n + 1);
-        bit[a][b] = 1;
-        bit[b][a] = 1;
-        Lp[b].push_back(a);
-        Ln[a].push_back(b);
-    }
-    for (int i = 1; i <= n; i++)
-    {
-        for (int j = 1; j <= n; j++)
+        std::fstream czasyDEL;
+        std::fstream czasyDFS;
+        czasyDEL.open("CzasyDELMacierzGrafu.txt", std::ios::in | std::ios::out);
+        czasyDFS.open("CzasyDFSMacierzGrafu.txt", std::ios::in | std::ios::out);
+        for (int i = 1; i < argc; i++)
         {
-            if (!bit[i][j])
+            std::fstream plik;
+            plik.open(argv[i], std::ios::in | std::ios::out);
+            unsigned int n, m;
+            std::string k, l;
+            plik >> k >> l;
+            GetNumbersFromFile(&n, &m, k, l, 4294967291);
+            long long **t = (long long**)calloc((n + 1) * (n + 4), 8);
+            for (int i = 0; i < n + 1; i++)
             {
-                Lb[i].push_back(j);
+                t[i] = (long long*)calloc((n + 4), 8);
+            }
+            std::vector<unsigned int> Ln[n + 1], Lp[n + 1], Lb[n + 1];
+            bool bit[n + 1][n + 1] = {{0}};
+            unsigned int a, b;
+            for (int i = 0; i < m; i++)
+            {
+                plik >> k >> l;
+                GetNumbersFromFile(&a, &b, k, l, n + 1);
+                bit[a][b] = 1;
+                bit[b][a] = 1;
+                Lp[b].push_back(a);
+                Ln[a].push_back(b);
+            }
+            for (int i = 1; i <= n; i++)
+            {
+                for (int j = 1; j <= n; j++)
+                {
+                    if (!bit[i][j])
+                    {
+                        Lb[i].push_back(j);
+                    }
+                }
+            }
+            for (int i = 1; i <= n; i++)
+            {
+                std::sort(Lb[i].begin(), Lb[i].end());
+                std::sort(Lp[i].begin(), Lp[i].end());
+                std::sort(Ln[i].begin(), Ln[i].end());
+            }
+            for (int i = 1; i <= n; i++)
+            {
+                for (int j = 0; j < Ln[i].size(); j++)
+                {
+                    if (!j)
+                    {
+                        t[i][n + 1] += Ln[i][j];
+                    }
+                    if (Ln[i].size() - j > 1)
+                    {
+                        t[i][Ln[i][j]] += Ln[i][j + 1];
+                    }
+                    else
+                    {
+                        t[i][Ln[i][j]] += Ln[i][j];
+                    }
+                }
+                for (int j = 0; j < Lp[i].size(); j++)
+                {
+                    if (!j)
+                    {
+                        t[i][n + 2] += Lp[i][j];
+                    }
+                    if (Lp[i].size() - j > 1)
+                    {
+                        t[i][Lp[i][j]] += Lp[i][j + 1] + n;
+                    }
+                    else
+                    {
+                        t[i][Lp[i][j]] += Lp[i][j] + n;
+                    }
+                }
+                for (int j = 0; j < Lb[i].size(); j++)
+                {
+                    if (!j)
+                    {
+                        t[i][n + 3] = Lb[i][j];
+                    }
+                    if (Lb[i].size() - j > 1)
+                    {
+                        t[i][Lb[i][j]] -= Lb[i][j + 1];
+                    }
+                    else
+                    {
+                        t[i][Lb[i][j]] -= Lb[i][j];
+                    }
+                }
+            }
+            std::clock_t timestart = std::clock();
+            DEL(t, n);
+            std::clock_t timeend = std::clock();
+            czasyDEL << 1000.0 * (timeend - timestart) / CLOCKS_PER_SEC << "\n";
+            timestart = std::clock();
+            DFSMain(t, n);
+            timeend = std::clock();
+            czasyDFS << 1000.0 * (timeend - timestart) / CLOCKS_PER_SEC << "\n";
+            free(t);
+        }
+        czasyDEL.close();
+        czasyDFS.close();
+    }
+    else
+    {
+        unsigned int n, m;
+        GetNumbers(&n, &m, 4294967291);
+        long long **t = (long long**)calloc((n + 1) * (n + 4), 8);
+        for (int i = 0; i < n + 1; i++)
+        {
+            t[i] = (long long*)calloc((n + 4), 8);
+        }
+        std::vector<unsigned int> Ln[n + 1], Lp[n + 1], Lb[n + 1];
+        bool bit[n + 1][n + 1] = {{0}};
+        unsigned int a, b;
+        for (int i = 0; i < m; i++)
+        {
+            GetNumbers(&a, &b, n + 1);
+            bit[a][b] = 1;
+            bit[b][a] = 1;
+            Lp[b].push_back(a);
+            Ln[a].push_back(b);
+        }
+        for (int i = 1; i <= n; i++)
+        {
+            for (int j = 1; j <= n; j++)
+            {
+                if (!bit[i][j])
+                {
+                    Lb[i].push_back(j);
+                }
             }
         }
-    }
-    for (int i = 1; i <= n; i++)
-    {
-        std::sort(Lb[i].begin(), Lb[i].end());
-        std::sort(Lp[i].begin(), Lp[i].end());
-        std::sort(Ln[i].begin(), Ln[i].end());
-    }
-    for (int i = 1; i <= n; i++)
-    {
-        for (int j = 0; j < Ln[i].size(); j++)
+        for (int i = 1; i <= n; i++)
         {
-            if (!j)
+            std::sort(Lb[i].begin(), Lb[i].end());
+            std::sort(Lp[i].begin(), Lp[i].end());
+            std::sort(Ln[i].begin(), Ln[i].end());
+        }
+        for (int i = 1; i <= n; i++)
+        {
+            for (int j = 0; j < Ln[i].size(); j++)
             {
-                t[i][n + 1] += Ln[i][j];
+                if (!j)
+                {
+                    t[i][n + 1] += Ln[i][j];
+                }
+                if (Ln[i].size() - j > 1)
+                {
+                    t[i][Ln[i][j]] += Ln[i][j + 1];
+                }
+                else
+                {
+                    t[i][Ln[i][j]] += Ln[i][j];
+                }
             }
-            if (Ln[i].size() - j > 1)
+            for (int j = 0; j < Lp[i].size(); j++)
             {
-                t[i][Ln[i][j]] += Ln[i][j + 1];
+                if (!j)
+                {
+                    t[i][n + 2] += Lp[i][j];
+                }
+                if (Lp[i].size() - j > 1)
+                {
+                    t[i][Lp[i][j]] += Lp[i][j + 1] + n;
+                }
+                else
+                {
+                    t[i][Lp[i][j]] += Lp[i][j] + n;
+                }
             }
-            else
+            for (int j = 0; j < Lb[i].size(); j++)
             {
-                t[i][Ln[i][j]] += Ln[i][j];
+                if (!j)
+                {
+                    t[i][n + 3] = Lb[i][j];
+                }
+                if (Lb[i].size() - j > 1)
+                {
+                    t[i][Lb[i][j]] -= Lb[i][j + 1];
+                }
+                else
+                {
+                    t[i][Lb[i][j]] -= Lb[i][j];
+                }
             }
         }
-        for (int j = 0; j < Lp[i].size(); j++)
-        {
-            if (!j)
-            {
-                t[i][n + 2] += Lp[i][j];
-            }
-            if (Lp[i].size() - j > 1)
-            {
-                t[i][Lp[i][j]] += Lp[i][j + 1] + n;
-            }
-            else
-            {
-                t[i][Lp[i][j]] += Lp[i][j] + n;
-            }
-        }
-        for (int j = 0; j < Lb[i].size(); j++)
-        {
-            if (!j)
-            {
-                t[i][n + 3] = Lb[i][j];
-            }
-            if (Lb[i].size() - j > 1)
-            {
-                t[i][Lb[i][j]] -= Lb[i][j + 1];
-            }
-            else
-            {
-                t[i][Lb[i][j]] -= Lb[i][j];
-            }
-        }
+        DEL(t, n);
+        DFSMain(t, n);
+        free(t);
     }
-    for (int i = 1; i < n + 1; i++)
-    {
-        for (int j = 1; j < n + 4; j++)
-        {
-            std::cout << t[i][j] << " ";
-        }
-        std::cout << "\n";
-    }
-
-    DEL(t, n);
-    DFSMain(t, n);
-    free(t);
 }
 
 std::string IntToString(int x)
@@ -136,6 +241,30 @@ void GetNumbers(unsigned int *a, unsigned int *b, unsigned int limit)
     {
         std::string l, k;
         std::cin >> l >> k;
+        n = StringToInt(l);
+        if (IntToString(n) != l || n > limit)
+        {
+            std::cout << "Bledne dane.\n";
+            continue;
+        }
+        m = StringToInt(k);
+        if (IntToString(m) != k || m > limit)
+        {
+            std::cout << "Bledne dane.\n";
+            continue;
+        }
+        break;
+    }
+    *a = n;
+    *b = m;
+    return;
+}
+
+void GetNumbersFromFile(unsigned int *a, unsigned int *b, std::string l, std::string k, unsigned int limit)
+{
+    unsigned int n, m;
+    for (;;)
+    {
         n = StringToInt(l);
         if (IntToString(n) != l || n > limit)
         {
