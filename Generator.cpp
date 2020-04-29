@@ -17,7 +17,7 @@ int main(void)
     srand(time(NULL));
     std::string fileName;
     std::vector<std::string> fileNames;
-    for (int j = 500; j <= 500; j += 500)
+    for (int j = 500; j <= 5000; j += 500)
     {
         for (int i = 0; i < 10; i++)
         {
