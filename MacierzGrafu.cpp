@@ -22,17 +22,18 @@ int main(int argc, char* argv[])
     {
         std::fstream czasyDEL;
         std::fstream czasyDFS;
-        czasyDEL.open("CzasyDELMacierzGrafu.txt", std::ios::in | std::ios::out);
-        czasyDFS.open("CzasyDFSMacierzGrafu.txt", std::ios::in | std::ios::out);
-        for (int i = 1; i < argc; i++)
+        czasyDEL.open("CzasyDELMacierzGrafu.txt", std::ios::in | std::ios::out | std::ios::trunc);
+        czasyDFS.open("CzasyDFSMacierzGrafu.txt", std::ios::in | std::ios::out | std::ios::trunc);
+        for (int ppp = 1; ppp < argc; ppp++)
         {
+            std::cout << ppp << "\n";
             std::fstream plik;
-            plik.open(argv[i], std::ios::in | std::ios::out);
+            plik.open(argv[ppp], std::ios::in | std::ios::out);
             unsigned int n, m;
             std::string k, l;
             plik >> k >> l;
             GetNumbersFromFile(&n, &m, k, l, 4294967291);
-            long long **t = (long long**)calloc((n + 1) * (n + 4), 8);
+            long long **t = (long long**)calloc((n + 1) * (n + 4), sizeof(long long*));
             for (int i = 0; i < n + 1; i++)
             {
                 t[i] = (long long*)calloc((n + 4), 8);
@@ -46,7 +47,7 @@ int main(int argc, char* argv[])
                 bit[i] = (char*)calloc(n + 1, 1);
             }
             unsigned int a, b;
-            for (int i = 0; i < m; i++)
+            for (int i = 0; !plik.eof(); i++)
             {
                 plik >> k >> l;
                 GetNumbersFromFile(&a, &b, k, l, n + 1);
@@ -65,6 +66,7 @@ int main(int argc, char* argv[])
                     }
                 }
             }
+
             for (int i = 1; i <= n; i++)
             {
                 std::sort(Lb[i].begin(), Lb[i].end());
@@ -128,6 +130,10 @@ int main(int argc, char* argv[])
             timeend = std::clock();
             czasyDFS << 1000.0 * (timeend - timestart) / CLOCKS_PER_SEC << "\n";
             free(bit);
+            for (int ppp = 0; ppp <= n; ppp++)
+            {
+                free(t[ppp]);
+            }
             free(t);
             delete Lp;
             delete Lb;
@@ -157,6 +163,11 @@ int main(int argc, char* argv[])
         for (int i = 0; i < m; i++)
         {
             GetNumbers(&a, &b, n + 1);
+            if (bit[a][b] != 0 || bit[b][a] != 0)
+            {
+                std::cout << "Wykryto multigraf.\n";
+                return 1;
+            }
             bit[a][b] = 1;
             bit[b][a] = 1;
             Lp[b].push_back(a);
@@ -184,7 +195,7 @@ int main(int argc, char* argv[])
             {
                 if (!j)
                 {
-                    t[i][n + 1] += Ln[i][j];
+                    t[i][n + 1] = Ln[i][j];
                 }
                 if (Ln[i].size() - j > 1)
                 {
@@ -199,7 +210,7 @@ int main(int argc, char* argv[])
             {
                 if (!j)
                 {
-                    t[i][n + 2] += Lp[i][j];
+                    t[i][n + 2] = Lp[i][j];
                 }
                 if (Lp[i].size() - j > 1)
                 {
@@ -232,6 +243,10 @@ int main(int argc, char* argv[])
         delete Lp;
         delete Lb;
         free(bit);
+        for (int ppp = 0; ppp <= n; ppp++)
+        {
+            free(t[ppp]);
+        }
         free(t);
     }
 }
@@ -262,13 +277,13 @@ void GetNumbers(unsigned int *a, unsigned int *b, unsigned int limit)
         std::string l, k;
         std::cin >> l >> k;
         n = StringToInt(l);
-        if (IntToString(n) != l || n > limit)
+        if (IntToString(n) != l || n > limit || n == 0)
         {
             std::cout << "Bledne dane.\n";
             continue;
         }
         m = StringToInt(k);
-        if (IntToString(m) != k || m > limit)
+        if (IntToString(m) != k || m > limit || m == 0)
         {
             std::cout << "Bledne dane.\n";
             continue;
@@ -311,9 +326,9 @@ void DEL(long long **t, int arraySize)
     {
         if (t[i][arraySize + 2] != 0)
         {
-            unsigned int current = t[i][arraySize + 2];
+            long long current = t[i][arraySize + 2];
             stopien[i]++;
-            while (current != t[i][current] - arraySize)
+            while (current != t[i][current] - arraySize && t[i][current] > arraySize && t[i][current] <= 2 * arraySize)
             {
                 stopien[i]++;
                 current = t[i][current] - arraySize;
@@ -339,7 +354,7 @@ void DEL(long long **t, int arraySize)
         if (t[current2][arraySize + 1] != 0)
         {
             unsigned int current = t[current2][arraySize + 1];
-            while (current != t[current2][current])
+            while (current != t[current2][current] && t[current2][current] > 0 && t[current2][current] <= arraySize)
             {
                 if (--stopien[current] == 0)
                     stos.push(current);
@@ -353,14 +368,15 @@ void DEL(long long **t, int arraySize)
     {
         std::cout << "Graf ma cykl.\n";
     }
-    else
+    /*else
     {
+        std::cout << "DEL: ";
         for (int i = 0; i < arraySize; i++)
         {
             std::cout << wynik[i] << " ";
         }
         std::cout << "\n";
-    }
+    }*/
     free(wynik);
     free(stopien);
     return;
@@ -372,7 +388,7 @@ void DFS(unsigned int index, unsigned int *visited, std::vector<unsigned int> &s
     if (t[index][arraySize + 1] != 0)
     {
         unsigned int current = t[index][arraySize + 1];
-        while (current != t[index][current])
+        while (current != t[index][current] && t[index][current] > 0 && t[index][current] <= arraySize)
         {
             if (visited[current] == 1)
             {
@@ -413,12 +429,13 @@ void DFSMain(long long **t, int arraySize)
     {
         std::cout << "Graf ma cykl.\n";
     }
-    else
+    /*else
     {
+        std::cout << "DFS: ";
         for (int i = stos.size() - 1; i >= 0; i--)
         {
             std::cout << stos[i] << " ";
         }
         std::cout << "\n";
-    }
+    }*/
 }

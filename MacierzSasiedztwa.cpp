@@ -5,14 +5,13 @@
 #include <fstream>
 #include <ctime>
 #include <chrono>
-#include <algorithm>
 
 void GetNumbers(unsigned int *a, unsigned int *b, unsigned int limit = 4294967295);
 void GetNumbersFromFile(unsigned int *a, unsigned int *b, std::string l, std::string k, unsigned int limit = 4294967295);
 unsigned int StringToInt(std::string x);
 std::string IntToString(int x);
-void DFSMain(std::vector<unsigned int> t[], int arraySize);
-void DEL(std::vector<unsigned int> t[], int arraySize);
+void DFSMain(char **t, int arraySize);
+void DEL(char **t, int arraySize);
 
 int main(int argc, char* argv[])
 {
@@ -20,8 +19,8 @@ int main(int argc, char* argv[])
     {
         std::fstream czasyDEL;
         std::fstream czasyDFS;
-        czasyDEL.open("CzasyDELLista.txt", std::ios::in | std::ios::out | std::ios::trunc);
-        czasyDFS.open("CzasyDFSLista.txt", std::ios::in | std::ios::out | std::ios::trunc);
+        czasyDEL.open("CzasyDELMacierzSasiedztwa.txt", std::ios::in | std::ios::out | std::ios::trunc);
+        czasyDFS.open("CzasyDFSMacierzSasiedztwa.txt", std::ios::in | std::ios::out | std::ios::trunc);
         for (int i = 1; i < argc; i++)
         {
             std::cout << i << "\n";
@@ -31,13 +30,18 @@ int main(int argc, char* argv[])
             std::string k, l;
             plik >> k >> l;
             GetNumbersFromFile(&n, &m, k, l, 4294967291);
-            std::vector<unsigned int> *t = new std::vector<unsigned int>[n + 1];
+            char **t = (char**)calloc((n + 1) * (n + 1), sizeof(char(*)));
+            for (int ppp = 0; ppp < n + 1; ppp++)
+            {
+                t[ppp] = (char*)calloc(n + 1, 1);
+            }
             unsigned int a, b;
             for (int j = 0; !plik.eof(); j++)
             {
                 plik >> k >> l;
                 GetNumbersFromFile(&a, &b, k, l, n + 1);
-                t[a].push_back(b);
+                t[a][b] = 1;
+                t[b][a] = -1;
             }
             std::clock_t timestart = std::clock();
             DEL(t, n);
@@ -47,8 +51,11 @@ int main(int argc, char* argv[])
             DFSMain(t, n);
             timeend = std::clock();
             czasyDFS << 1000.0 * (timeend - timestart) / CLOCKS_PER_SEC << "\n";
-            delete t;
-            plik.close();
+            for (int ppp = 0; ppp <= n; ppp++)
+            {
+                free(t[ppp]);
+            }
+            free(t);
         }
         czasyDEL.close();
         czasyDFS.close();
@@ -57,20 +64,30 @@ int main(int argc, char* argv[])
     {
         unsigned int n, m;
         GetNumbers(&n, &m);
-        std::vector<unsigned int> *t = new std::vector<unsigned int>[n + 1];
+        char **t = (char**)calloc((n + 1) * (n + 1), sizeof(char(*)));
+        for (int ppp = 0; ppp < n + 1; ppp++)
+        {
+            t[ppp] = (char*)calloc(n + 1, 1);
+        }
         unsigned int a, b;
         for (int i = 0; i < m; i++)
         {
             GetNumbers(&a, &b, n + 1);
-            t[a].push_back(b);
-        }
-        for (int i = 1; i < n + 1; i++)
-        {
-            std::sort(t[i].begin(), t[i].end());
+            if (t[a][b] != 0)
+            {
+                std::cout << "Wykryto multigraf.\n";
+                return 1;
+            }
+            t[a][b] = 1;
+            t[b][a] = 2;
         }
         DEL(t, n);
         DFSMain(t, n);
-        delete t;
+        for (int ppp = 0; ppp <= n; ppp++)
+        {
+            free(t[ppp]);
+        }
+        free(t);
     }
     return 0;
 }
@@ -143,14 +160,17 @@ void GetNumbersFromFile(unsigned int *a, unsigned int *b, std::string l, std::st
     return;
 }
 
-void DEL(std::vector<unsigned int> t[], int arraySize)
+void DEL(char **t, int arraySize)
 {
     unsigned int *stopien = (unsigned int*)calloc(arraySize + 1, 4);
     for (int i = 1; i <= arraySize; i++)
     {
-        for (int j = 0; j < t[i].size(); j++)
+        for (int j = 1; j <= arraySize; j++)
         {
-            stopien[t[i][j]]++;
+            if (t[i][j] == 2)
+            {
+                stopien[i]++;
+            }
         }
     }
     unsigned int visited = 0;
@@ -162,18 +182,21 @@ void DEL(std::vector<unsigned int> t[], int arraySize)
             stos.push(i);
         }
     }
-    unsigned int index;
+    unsigned int current;
     unsigned int *wynik = (unsigned int*)calloc(arraySize, 4);
     while (!stos.empty())
     {
-        index = stos.top();
-        wynik[visited++] = index;
+        current = stos.top();
+        wynik[visited++] = current;
         stos.pop();
-        for (int i = 0; i < t[index].size(); i++)
+        for (int i = 1; i <= arraySize; i++)
         {
-            if (--stopien[t[index][i]] == 0)
+            if (t[current][i] == 1)
             {
-                stos.push(t[index][i]);
+                if (--stopien[i] == 0)
+            {
+                stos.push(i);
+            }
             }
         }
     }
@@ -193,27 +216,32 @@ void DEL(std::vector<unsigned int> t[], int arraySize)
     free(stopien);
     free(wynik);
     return;
+
+    return;
 }
 
-void DFS(unsigned int index, unsigned int *visited, std::vector<unsigned int> &stos, std::vector<unsigned int> *t, bool *isCycle)
+void DFS(unsigned int index, unsigned int *visited, std::vector<unsigned int> &stos, char **t, bool *isCycle, int arraySize)
 {
     visited[index] = 1;
-    for (int i = 0; i < t[index].size(); i++)
+    for (int i = 1; i <= arraySize; i++)
     {
-        if (visited[t[index][i]] == 1)
+        if (t[index][i] == 1)
         {
-            *isCycle = true;
-        }
-        else if (visited[t[index][i]] == 0)
-        {
-            DFS(t[index][i], visited, stos, t, isCycle);
+            if (visited[i] == 1)
+            {
+                *isCycle = true;
+            }
+            else if (visited[i] == 0)
+            {
+                DFS(i, visited, stos, t, isCycle, arraySize);
+            }
         }
     }
     visited[index] = 2;
     stos.push_back(index);
 }
 
-void DFSMain(std::vector<unsigned int> *t, int arraySize)
+void DFSMain(char **t, int arraySize)
 {
     std::vector<unsigned int> stos;
     unsigned int *visited = (unsigned int*)calloc(arraySize + 1, 4);
@@ -222,7 +250,7 @@ void DFSMain(std::vector<unsigned int> *t, int arraySize)
     {
         if (!visited[i])
         {
-            DFS(i, visited, stos, t, &isCycle);
+            DFS(i, visited, stos, t, &isCycle, arraySize);
         }
     }
     if (isCycle)
@@ -239,4 +267,6 @@ void DFSMain(std::vector<unsigned int> *t, int arraySize)
         std::cout << "\n";
     }*/
     free(visited);
+
 }
+
